@@ -1,0 +1,17 @@
+/* Custom styles */
+.game-card {
+    height: 100%;
+}
+
+.game-card img {
+    object-fit: cover;
+    height: 200px;
+}
+
+.discount-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 1.2rem;
+    font-weight: bold;
+}

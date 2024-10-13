@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="mb-4">Find Steam Game Promotions</h1>
+<div class="row">
+    <div class="col-md-6 offset-md-3">
+        <div class="input-group mb-3">
+            <input type="text" id="search-input" class="form-control" placeholder="Search for a game..." aria-label="Search for a game">
+            <button class="btn btn-outline-secondary" type="button" id="search-button">Search</button>
+        </div>
+    </div>
+</div>
+<div id="results" class="row row-cols-1 row-cols-md-3 g-4">
+    <!-- Search results will be dynamically inserted here -->
+</div>
+{% endblock %}
