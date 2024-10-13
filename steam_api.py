@@ -1,13 +1,17 @@
 import requests
+from app import cache
 
 STEAM_API_BASE_URL = "https://store.steampowered.com/api"
 
-def search_steam_games(query):
+@cache.memoize(timeout=300)
+def search_steam_games(query, page=1, per_page=20):
     url = f"{STEAM_API_BASE_URL}/storesearch/"
     params = {
         "term": query,
         "l": "english",
-        "cc": "US"
+        "cc": "US",
+        "start": (page - 1) * per_page,
+        "count": per_page
     }
     response = requests.get(url, params=params)
     data = response.json()
@@ -21,8 +25,11 @@ def search_steam_games(query):
         }
         games.append(game)
     
-    return games
+    total_results = data.get('total', 0)
+    
+    return games, total_results
 
+@cache.memoize(timeout=300)
 def get_game_details(app_id):
     url = f"{STEAM_API_BASE_URL}/appdetails/"
     params = {
