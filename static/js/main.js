@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
             fetch(`/search?q=${encodeURIComponent(query)}&page=${currentPage}&min_price=${minPrice}&max_price=${maxPrice}&min_discount=${minDiscount}`)
                 .then(response => {
                     if (!response.ok) {
-                        throw new Error('Network response was not ok');
+                        throw new Error(`HTTP error! status: ${response.status}`);
                     }
                     return response.json();
                 })
@@ -69,8 +69,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.error('Error:', error);
                     isLoading = false;
                     showLoading(false);
-                    displayError('An error occurred while fetching results. Please try again.');
+                    displayError(`An error occurred while fetching results: ${error.message}. Please try again.`);
                 });
+        } else {
+            displayError('Please enter a search query.');
         }
     }
 
@@ -82,6 +84,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function displayResults(games) {
+        if (games.length === 0) {
+            displayError('No games found matching your criteria.');
+            return;
+        }
         games.forEach(game => {
             const gameElement = createGameElement(game);
             resultsContainer.appendChild(gameElement);
@@ -118,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fetch(`/game/${appId}`)
             .then(response => {
                 if (!response.ok) {
-                    throw new Error('Network response was not ok');
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 return response.json();
             })
@@ -129,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .catch(error => {
                 console.error('Error:', error);
                 showLoading(false);
-                displayError('An error occurred while fetching game details. Please try again.');
+                displayError(`An error occurred while fetching game details: ${error.message}. Please try again.`);
             });
     }
 
@@ -177,9 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const errorAlert = document.createElement('div');
         errorAlert.className = 'alert alert-danger mt-3';
         errorAlert.textContent = message;
-        resultsContainer.prepend(errorAlert);
-        setTimeout(() => {
-            errorAlert.remove();
-        }, 5000);
+        resultsContainer.innerHTML = '';
+        resultsContainer.appendChild(errorAlert);
     }
 });

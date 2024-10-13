@@ -11,9 +11,21 @@ def search():
     query = request.args.get('q', '')
     page = int(request.args.get('page', 1))
     per_page = int(request.args.get('per_page', 20))
-    min_price = float(request.args.get('min_price', 0))
-    max_price = float(request.args.get('max_price', float('inf')))
-    min_discount = int(request.args.get('min_discount', 0))
+    
+    try:
+        min_price = float(request.args.get('min_price')) if request.args.get('min_price') else 0
+    except ValueError:
+        min_price = 0
+    
+    try:
+        max_price = float(request.args.get('max_price')) if request.args.get('max_price') else float('inf')
+    except ValueError:
+        max_price = float('inf')
+    
+    try:
+        min_discount = int(request.args.get('min_discount')) if request.args.get('min_discount') else 0
+    except ValueError:
+        min_discount = 0
     
     if not query:
         return jsonify({'games': [], 'total': 0})
