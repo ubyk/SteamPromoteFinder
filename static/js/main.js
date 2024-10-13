@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchButton = document.getElementById('search-button');
     const resultsContainer = document.getElementById('results');
     const themeToggle = document.getElementById('theme-toggle');
+    const loadingIndicator = document.getElementById('loading');
     let currentPage = 1;
     let totalResults = 0;
     let currentQuery = '';
@@ -47,8 +48,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (query) {
             currentQuery = query;
             isLoading = true;
+            showLoading(true);
             fetch(`/search?q=${encodeURIComponent(query)}&page=${currentPage}&min_price=${minPrice}&max_price=${maxPrice}&min_discount=${minDiscount}`)
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     if (currentPage === 1) {
                         resultsContainer.innerHTML = '';
@@ -56,10 +63,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     displayResults(data.games);
                     totalResults = data.total;
                     isLoading = false;
+                    showLoading(false);
                 })
                 .catch(error => {
                     console.error('Error:', error);
                     isLoading = false;
+                    showLoading(false);
+                    displayError('An error occurred while fetching results. Please try again.');
                 });
         }
     }
@@ -87,8 +97,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="card-body d-flex flex-column">
                     <h5 class="card-title">${game.name}</h5>
                     <p class="card-text">
-                        <strong>Price:</strong> ${game.discounted_price}<br>
-                        <strong>Discount:</strong> ${game.discount_percent}%
+                        <strong>Price:</strong> ${game.discounted_price || 'N/A'}<br>
+                        <strong>Discount:</strong> ${game.discount_percent || 0}%
                     </p>
                     <button class="btn btn-primary mt-auto view-details" data-app-id="${game.app_id}">View Details</button>
                 </div>
@@ -104,13 +114,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function fetchGameDetails(appId) {
+        showLoading(true);
         fetch(`/game/${appId}`)
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
             .then(details => {
                 displayGameDetails(details);
+                showLoading(false);
             })
             .catch(error => {
                 console.error('Error:', error);
+                showLoading(false);
+                displayError('An error occurred while fetching game details. Please try again.');
             });
     }
 
@@ -131,9 +150,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <img src="${details.image_url}" class="img-fluid mb-3" alt="${details.name}">
                             </div>
                             <div class="col-md-6">
-                                <p><strong>Original Price:</strong> ${details.original_price}</p>
-                                <p><strong>Discounted Price:</strong> ${details.discounted_price}</p>
-                                <p><strong>Discount:</strong> ${details.discount_percent}%</p>
+                                <p><strong>Original Price:</strong> ${details.original_price || 'N/A'}</p>
+                                <p><strong>Discounted Price:</strong> ${details.discounted_price || 'N/A'}</p>
+                                <p><strong>Discount:</strong> ${details.discount_percent || 0}%</p>
                             </div>
                         </div>
                     </div>
@@ -148,5 +167,19 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.addEventListener('hidden.bs.modal', () => {
             modal.remove();
         });
+    }
+
+    function showLoading(show) {
+        loadingIndicator.classList.toggle('d-none', !show);
+    }
+
+    function displayError(message) {
+        const errorAlert = document.createElement('div');
+        errorAlert.className = 'alert alert-danger mt-3';
+        errorAlert.textContent = message;
+        resultsContainer.prepend(errorAlert);
+        setTimeout(() => {
+            errorAlert.remove();
+        }, 5000);
     }
 });

@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container">
+<div class="container py-4">
     <h1 class="mb-4">Find Steam Game Promotions</h1>
-    <div class="row">
+    <div class="row mb-4">
         <div class="col-md-8 offset-md-2">
-            <div class="input-group mb-3">
+            <div class="input-group">
                 <input type="text" id="search-input" class="form-control" placeholder="Search for a game..." aria-label="Search for a game">
                 <button class="btn btn-outline-secondary" type="button" id="search-button">Search</button>
             </div>
@@ -16,7 +16,7 @@
             <div class="card">
                 <div class="card-body">
                     <h5 class="card-title">Filters</h5>
-                    <div class="row">
+                    <div class="row g-3">
                         <div class="col-md-4">
                             <label for="min-price" class="form-label">Min Price</label>
                             <input type="number" class="form-control" id="min-price" min="0" step="0.01">
@@ -34,10 +34,10 @@
             </div>
         </div>
     </div>
-    <div id="results" class="row">
+    <div id="results" class="row g-4">
         <!-- Search results will be dynamically inserted here -->
     </div>
-    <div id="loading" class="text-center d-none">
+    <div id="loading" class="text-center mt-4 d-none">
         <div class="spinner-border text-primary" role="status">
             <span class="visually-hidden">Loading...</span>
         </div>

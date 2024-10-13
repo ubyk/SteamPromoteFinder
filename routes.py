@@ -21,11 +21,18 @@ def search():
     games, total_results = search_steam_games(query, page, per_page)
     
     # Apply filters
-    filtered_games = [
-        game for game in games
-        if min_price <= float(game['discounted_price'].replace('$', '')) <= max_price
-        and game['discount_percent'] >= min_discount
-    ]
+    filtered_games = []
+    for game in games:
+        discounted_price = game.get('discounted_price', '0')
+        if discounted_price.startswith('$'):
+            discounted_price = discounted_price[1:]
+        try:
+            price = float(discounted_price)
+            if min_price <= price <= max_price and game.get('discount_percent', 0) >= min_discount:
+                filtered_games.append(game)
+        except ValueError:
+            # Skip games with invalid price format
+            continue
     
     return jsonify({'games': filtered_games, 'total': len(filtered_games)})
 
