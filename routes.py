@@ -27,12 +27,14 @@ def search():
     except ValueError:
         min_discount = 0
     
+    sort_by = request.args.get('sort', 'relevance')
+    
     if not query:
         return jsonify({'games': [], 'total': 0})
     
     games, total_results = search_steam_games(query, page, per_page)
     
-    # Apply filters
+    # Apply filters and sorting
     filtered_games = []
     for game in games:
         discounted_price = game.get('discounted_price', '0')
@@ -45,6 +47,14 @@ def search():
         except ValueError:
             # Skip games with invalid price format
             continue
+    
+    # Apply sorting
+    if sort_by == 'price_asc':
+        filtered_games.sort(key=lambda g: float(g.get('discounted_price', '0').replace('$', '')) or float('inf'))
+    elif sort_by == 'price_desc':
+        filtered_games.sort(key=lambda g: float(g.get('discounted_price', '0').replace('$', '')) or 0, reverse=True)
+    elif sort_by == 'discount_desc':
+        filtered_games.sort(key=lambda g: g.get('discount_percent', 0), reverse=True)
     
     return jsonify({'games': filtered_games, 'total': len(filtered_games)})
 

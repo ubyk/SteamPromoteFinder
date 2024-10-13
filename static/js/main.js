@@ -21,17 +21,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    searchButton.addEventListener('click', () => {
+    // Debounce function
+    function debounce(func, delay) {
+        let timeoutId;
+        return function (...args) {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => func.apply(this, args), delay);
+        };
+    }
+
+    // Debounced search function
+    const debouncedSearch = debounce(() => {
         currentPage = 1;
         performSearch();
-    });
+    }, 300);
 
-    searchInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            currentPage = 1;
-            performSearch();
-        }
-    });
+    searchButton.addEventListener('click', debouncedSearch);
+    searchInput.addEventListener('input', debouncedSearch);
 
     window.addEventListener('scroll', () => {
         if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 100 && !isLoading) {
@@ -44,33 +50,49 @@ document.addEventListener('DOMContentLoaded', () => {
         const minPrice = document.getElementById('min-price').value;
         const maxPrice = document.getElementById('max-price').value;
         const minDiscount = document.getElementById('min-discount').value;
+        const sortBy = document.getElementById('sort-by').value;
 
         if (query) {
             currentQuery = query;
             isLoading = true;
             showLoading(true);
-            fetch(`/search?q=${encodeURIComponent(query)}&page=${currentPage}&min_price=${minPrice}&max_price=${maxPrice}&min_discount=${minDiscount}`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (currentPage === 1) {
-                        resultsContainer.innerHTML = '';
-                    }
-                    displayResults(data.games);
-                    totalResults = data.total;
-                    isLoading = false;
-                    showLoading(false);
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    isLoading = false;
-                    showLoading(false);
-                    displayError(`An error occurred while fetching results: ${error.message}. Please try again.`);
-                });
+
+            // Check cache first
+            const cacheKey = `${query}_${minPrice}_${maxPrice}_${minDiscount}_${sortBy}_${currentPage}`;
+            const cachedResults = getCachedResults(cacheKey);
+
+            if (cachedResults) {
+                displayResults(cachedResults.games);
+                totalResults = cachedResults.total;
+                isLoading = false;
+                showLoading(false);
+            } else {
+                fetch(`/search?q=${encodeURIComponent(query)}&page=${currentPage}&min_price=${minPrice}&max_price=${maxPrice}&min_discount=${minDiscount}&sort=${sortBy}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (currentPage === 1) {
+                            resultsContainer.innerHTML = '';
+                        }
+                        displayResults(data.games);
+                        totalResults = data.total;
+                        isLoading = false;
+                        showLoading(false);
+
+                        // Cache the results
+                        cacheResults(cacheKey, data);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        isLoading = false;
+                        showLoading(false);
+                        displayError(`An error occurred while fetching results: ${error.message}. Please try again.`);
+                    });
+            }
         } else {
             displayError('Please enter a search query.');
         }
@@ -92,14 +114,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const gameElement = createGameElement(game);
             resultsContainer.appendChild(gameElement);
         });
+        initLazyLoading();
     }
 
     function createGameElement(game) {
         const col = document.createElement('div');
-        col.className = 'col-md-4 col-lg-3 mb-4';
+        col.className = 'col-sm-6 col-md-4 col-lg-3 mb-4';
         col.innerHTML = `
             <div class="card game-card h-100">
-                <img src="${game.image_url}" class="card-img-top" alt="${game.name}">
+                <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="${game.image_url}" class="card-img-top lazy" alt="${game.name}">
                 <div class="card-body d-flex flex-column">
                     <h5 class="card-title">${game.name}</h5>
                     <p class="card-text">
@@ -117,6 +140,24 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         return col;
+    }
+
+    function initLazyLoading() {
+        const lazyImages = document.querySelectorAll('img.lazy');
+        const lazyImageObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const lazyImage = entry.target;
+                    lazyImage.src = lazyImage.dataset.src;
+                    lazyImage.classList.remove('lazy');
+                    lazyImageObserver.unobserve(lazyImage);
+                }
+            });
+        });
+
+        lazyImages.forEach(lazyImage => {
+            lazyImageObserver.observe(lazyImage);
+        });
     }
 
     function fetchGameDetails(appId) {
@@ -186,4 +227,26 @@ document.addEventListener('DOMContentLoaded', () => {
         resultsContainer.innerHTML = '';
         resultsContainer.appendChild(errorAlert);
     }
+
+    function getCachedResults(key) {
+        const cachedData = localStorage.getItem(key);
+        if (cachedData) {
+            const { timestamp, data } = JSON.parse(cachedData);
+            if (Date.now() - timestamp < 5 * 60 * 1000) { // 5 minutes cache
+                return data;
+            }
+        }
+        return null;
+    }
+
+    function cacheResults(key, data) {
+        const cacheData = {
+            timestamp: Date.now(),
+            data: data
+        };
+        localStorage.setItem(key, JSON.stringify(cacheData));
+    }
+
+    // Initialize lazy loading for initial content
+    initLazyLoading();
 });

@@ -17,17 +17,26 @@
                 <div class="card-body">
                     <h5 class="card-title">Filters</h5>
                     <div class="row g-3">
-                        <div class="col-md-4">
+                        <div class="col-sm-6 col-md-3">
                             <label for="min-price" class="form-label">Min Price</label>
                             <input type="number" class="form-control" id="min-price" min="0" step="0.01">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-sm-6 col-md-3">
                             <label for="max-price" class="form-label">Max Price</label>
                             <input type="number" class="form-control" id="max-price" min="0" step="0.01">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-sm-6 col-md-3">
                             <label for="min-discount" class="form-label">Min Discount %</label>
                             <input type="number" class="form-control" id="min-discount" min="0" max="100">
+                        </div>
+                        <div class="col-sm-6 col-md-3">
+                            <label for="sort-by" class="form-label">Sort By</label>
+                            <select class="form-select" id="sort-by">
+                                <option value="relevance">Relevance</option>
+                                <option value="price_asc">Price (Low to High)</option>
+                                <option value="price_desc">Price (High to Low)</option>
+                                <option value="discount_desc">Discount (High to Low)</option>
+                            </select>
                         </div>
                     </div>
                 </div>
