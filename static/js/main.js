@@ -1,12 +1,10 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const searchInput = document.getElementById('search-input');
-    const searchButton = document.getElementById('search-button');
+    const findDiscountsButton = document.getElementById('find-discounts');
     const resultsContainer = document.getElementById('results');
     const themeToggle = document.getElementById('theme-toggle');
     const loadingIndicator = document.getElementById('loading');
     let currentPage = 1;
     let totalResults = 0;
-    let currentQuery = '';
     let isLoading = false;
 
     // Theme toggle functionality
@@ -21,23 +19,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Debounce function
-    function debounce(func, delay) {
-        let timeoutId;
-        return function (...args) {
-            clearTimeout(timeoutId);
-            timeoutId = setTimeout(() => func.apply(this, args), delay);
-        };
-    }
-
-    // Debounced search function
-    const debouncedSearch = debounce(() => {
+    findDiscountsButton.addEventListener('click', () => {
         currentPage = 1;
-        performSearch();
-    }, 300);
-
-    searchButton.addEventListener('click', debouncedSearch);
-    searchInput.addEventListener('input', debouncedSearch);
+        fetchDiscountedGames();
+    });
 
     window.addEventListener('scroll', () => {
         if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 100 && !isLoading) {
@@ -45,69 +30,48 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    function performSearch() {
-        const query = searchInput.value.trim();
-        const minPrice = document.getElementById('min-price').value;
-        const maxPrice = document.getElementById('max-price').value;
-        const minDiscount = document.getElementById('min-discount').value;
+    function fetchDiscountedGames() {
+        const discountRange = document.getElementById('discount-range').value;
         const sortBy = document.getElementById('sort-by').value;
+        const [minDiscount, maxDiscount] = discountRange.split('-');
 
-        if (query) {
-            currentQuery = query;
-            isLoading = true;
-            showLoading(true);
+        isLoading = true;
+        showLoading(true);
 
-            // Check cache first
-            const cacheKey = `${query}_${minPrice}_${maxPrice}_${minDiscount}_${sortBy}_${currentPage}`;
-            const cachedResults = getCachedResults(cacheKey);
-
-            if (cachedResults) {
-                displayResults(cachedResults.games);
-                totalResults = cachedResults.total;
+        fetch(`/discounted_games?page=${currentPage}&min_discount=${minDiscount}&max_discount=${maxDiscount}&sort=${sortBy}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (currentPage === 1) {
+                    resultsContainer.innerHTML = '';
+                }
+                displayResults(data.games);
+                totalResults = data.total;
                 isLoading = false;
                 showLoading(false);
-            } else {
-                fetch(`/search?q=${encodeURIComponent(query)}&page=${currentPage}&min_price=${minPrice}&max_price=${maxPrice}&min_discount=${minDiscount}&sort=${sortBy}`)
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! status: ${response.status}`);
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        if (currentPage === 1) {
-                            resultsContainer.innerHTML = '';
-                        }
-                        displayResults(data.games);
-                        totalResults = data.total;
-                        isLoading = false;
-                        showLoading(false);
-
-                        // Cache the results
-                        cacheResults(cacheKey, data);
-                    })
-                    .catch(error => {
-                        console.error('Error:', error.message);
-                        isLoading = false;
-                        showLoading(false);
-                        displayError(`An error occurred while fetching results: ${error.message}. Please try again.`);
-                    });
-            }
-        } else {
-            displayError('Please enter a search query.');
-        }
+            })
+            .catch(error => {
+                console.error('Error:', error.message);
+                isLoading = false;
+                showLoading(false);
+                displayError(`An error occurred while fetching results: ${error.message}. Please try again.`);
+            });
     }
 
     function loadMoreResults() {
         if (resultsContainer.children.length < totalResults) {
             currentPage++;
-            performSearch();
+            fetchDiscountedGames();
         }
     }
 
     function displayResults(games) {
         if (games.length === 0) {
-            displayError('No games found matching your criteria.');
+            displayError('No discounted games found matching your criteria.');
             return;
         }
         games.forEach(game => {
@@ -122,12 +86,15 @@ document.addEventListener('DOMContentLoaded', () => {
         col.className = 'col-sm-6 col-md-4 col-lg-3 mb-4';
         col.innerHTML = `
             <div class="card game-card h-100">
-                <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="${game.image_url}" class="card-img-top lazy" alt="${game.name}">
+                <div class="position-relative">
+                    <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="${game.image_url}" class="card-img-top lazy" alt="${game.name}">
+                    <div class="discount-badge bg-danger text-white p-2 rounded-end">${game.discount_percent}% OFF</div>
+                </div>
                 <div class="card-body d-flex flex-column">
                     <h5 class="card-title">${game.name}</h5>
                     <p class="card-text">
-                        <strong>Price:</strong> ${game.discounted_price || 'N/A'}<br>
-                        <strong>Discount:</strong> ${game.discount_percent || 0}%
+                        <s class="text-muted">${game.original_price}</s><br>
+                        <strong class="text-success">${game.discounted_price}</strong>
                     </p>
                     <button class="btn btn-primary mt-auto view-details" data-app-id="${game.app_id}">View Details</button>
                 </div>
@@ -197,9 +164,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <img src="${details.image_url}" class="img-fluid mb-3" alt="${details.name}">
                             </div>
                             <div class="col-md-6">
-                                <p><strong>Original Price:</strong> ${details.original_price || 'N/A'}</p>
-                                <p><strong>Discounted Price:</strong> ${details.discounted_price || 'N/A'}</p>
-                                <p><strong>Discount:</strong> ${details.discount_percent || 0}%</p>
+                                <p><strong>Original Price:</strong> <s class="text-muted">${details.original_price || 'N/A'}</s></p>
+                                <p><strong>Discounted Price:</strong> <span class="text-success">${details.discounted_price || 'N/A'}</span></p>
+                                <p><strong>Discount:</strong> <span class="text-danger">${details.discount_percent || 0}% OFF</span></p>
                             </div>
                         </div>
                     </div>
@@ -226,33 +193,6 @@ document.addEventListener('DOMContentLoaded', () => {
         errorAlert.textContent = message;
         resultsContainer.innerHTML = '';
         resultsContainer.appendChild(errorAlert);
-    }
-
-    function getCachedResults(key) {
-        const cachedData = localStorage.getItem(key);
-        if (cachedData) {
-            try {
-                const { timestamp, data } = JSON.parse(cachedData);
-                if (Date.now() - timestamp < 5 * 60 * 1000) { // 5 minutes cache
-                    return data;
-                }
-            } catch (error) {
-                console.error('Error parsing cached data:', error.message);
-            }
-        }
-        return null;
-    }
-
-    function cacheResults(key, data) {
-        try {
-            const cacheData = {
-                timestamp: Date.now(),
-                data: data
-            };
-            localStorage.setItem(key, JSON.stringify(cacheData));
-        } catch (error) {
-            console.error('Error caching results:', error.message);
-        }
     }
 
     // Initialize lazy loading for initial content

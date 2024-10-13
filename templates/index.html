@@ -2,13 +2,10 @@
 
 {% block content %}
 <div class="container py-4">
-    <h1 class="mb-4">Find Steam Game Promotions</h1>
+    <h1 class="mb-4">Find Steam Game Discounts</h1>
     <div class="row mb-4">
         <div class="col-md-8 offset-md-2">
-            <div class="input-group">
-                <input type="text" id="search-input" class="form-control" placeholder="Search for a game..." aria-label="Search for a game">
-                <button class="btn btn-outline-secondary" type="button" id="search-button">Search</button>
-            </div>
+            <button id="find-discounts" class="btn btn-primary btn-lg w-100">Find Discounts</button>
         </div>
     </div>
     <div class="row mb-4">
@@ -18,24 +15,21 @@
                     <h5 class="card-title">Filters</h5>
                     <div class="row g-3">
                         <div class="col-sm-6 col-md-3">
-                            <label for="min-price" class="form-label">Min Price</label>
-                            <input type="number" class="form-control" id="min-price" min="0" step="0.01">
-                        </div>
-                        <div class="col-sm-6 col-md-3">
-                            <label for="max-price" class="form-label">Max Price</label>
-                            <input type="number" class="form-control" id="max-price" min="0" step="0.01">
-                        </div>
-                        <div class="col-sm-6 col-md-3">
-                            <label for="min-discount" class="form-label">Min Discount %</label>
-                            <input type="number" class="form-control" id="min-discount" min="0" max="100">
+                            <label for="discount-range" class="form-label">Discount Range</label>
+                            <select class="form-select" id="discount-range">
+                                <option value="0-100">All Discounts</option>
+                                <option value="10-25">10-25%</option>
+                                <option value="26-50">26-50%</option>
+                                <option value="51-75">51-75%</option>
+                                <option value="76-100">76%+</option>
+                            </select>
                         </div>
                         <div class="col-sm-6 col-md-3">
                             <label for="sort-by" class="form-label">Sort By</label>
                             <select class="form-select" id="sort-by">
-                                <option value="relevance">Relevance</option>
+                                <option value="discount_desc">Discount (High to Low)</option>
                                 <option value="price_asc">Price (Low to High)</option>
                                 <option value="price_desc">Price (High to Low)</option>
-                                <option value="discount_desc">Discount (High to Low)</option>
                             </select>
                         </div>
                     </div>

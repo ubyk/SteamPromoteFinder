@@ -4,28 +4,29 @@ from app import cache
 STEAM_API_BASE_URL = "https://store.steampowered.com/api"
 
 @cache.memoize(timeout=300)
-def search_steam_games(query, page=1, per_page=20):
-    url = f"{STEAM_API_BASE_URL}/storesearch/"
-    params = {
-        "term": query,
-        "l": "english",
-        "cc": "US",
-        "start": (page - 1) * per_page,
-        "count": per_page
-    }
-    response = requests.get(url, params=params)
+def fetch_discounted_games(page=1, per_page=20):
+    url = f"{STEAM_API_BASE_URL}/featuredcategories/"
+    response = requests.get(url)
     data = response.json()
     
+    specials = data.get('specials', {}).get('items', [])
+    
+    start = (page - 1) * per_page
+    end = start + per_page
+    
     games = []
-    for item in data.get('items', []):
+    for item in specials[start:end]:
         game = {
             'app_id': item['id'],
             'name': item['name'],
-            'image_url': item.get('tiny_image')
+            'image_url': item.get('large_capsule_image'),
+            'original_price': item.get('original_price'),
+            'discounted_price': item.get('final_price'),
+            'discount_percent': item.get('discount_percent')
         }
         games.append(game)
     
-    total_results = data.get('total', 0)
+    total_results = len(specials)
     
     return games, total_results
 
