@@ -87,7 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         cacheResults(cacheKey, data);
                     })
                     .catch(error => {
-                        console.error('Error:', error);
+                        console.error('Error:', error.message);
                         isLoading = false;
                         showLoading(false);
                         displayError(`An error occurred while fetching results: ${error.message}. Please try again.`);
@@ -174,7 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 showLoading(false);
             })
             .catch(error => {
-                console.error('Error:', error);
+                console.error('Error:', error.message);
                 showLoading(false);
                 displayError(`An error occurred while fetching game details: ${error.message}. Please try again.`);
             });
@@ -231,20 +231,28 @@ document.addEventListener('DOMContentLoaded', () => {
     function getCachedResults(key) {
         const cachedData = localStorage.getItem(key);
         if (cachedData) {
-            const { timestamp, data } = JSON.parse(cachedData);
-            if (Date.now() - timestamp < 5 * 60 * 1000) { // 5 minutes cache
-                return data;
+            try {
+                const { timestamp, data } = JSON.parse(cachedData);
+                if (Date.now() - timestamp < 5 * 60 * 1000) { // 5 minutes cache
+                    return data;
+                }
+            } catch (error) {
+                console.error('Error parsing cached data:', error.message);
             }
         }
         return null;
     }
 
     function cacheResults(key, data) {
-        const cacheData = {
-            timestamp: Date.now(),
-            data: data
-        };
-        localStorage.setItem(key, JSON.stringify(cacheData));
+        try {
+            const cacheData = {
+                timestamp: Date.now(),
+                data: data
+            };
+            localStorage.setItem(key, JSON.stringify(cacheData));
+        } catch (error) {
+            console.error('Error caching results:', error.message);
+        }
     }
 
     // Initialize lazy loading for initial content
